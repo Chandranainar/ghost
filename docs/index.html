@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BLACKWOOD MANOR — A Horror Experience</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>👻</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- DEBUG INFO -->
+<div id="debugInfo" style="position:fixed;top:0;left:0;background:rgba(0,0,0,0.9);color:#0f0;font-family:monospace;font-size:12px;padding:10px;z-index:99999;max-width:300px;max-height:200px;overflow:auto;display:none;">
+  <div id="debugText">Debugging...</div>
+</div>
+
+<!-- STORY INTRO -->
+<div id="storyScreen" class="story-screen hidden">
+  <div class="story-panel">
+    <div class="story-date">October 31st — 11:58 PM</div>
+    <div class="story-text" id="storyText"></div>
+    <button class="story-skip" id="storySkip">SKIP ›</button>
+  </div>
+</div>
+
+<!-- MAIN MENU -->
+<div id="mainMenu" class="main-menu hidden">
+  <div class="menu-bg-flicker"></div>
+  <div class="menu-manor" aria-hidden="true">
+    <div class="manor-roof"></div>
+    <div class="manor-body">
+      <span></span><span></span><span></span><span></span>
+    </div>
+    <div class="manor-ground"></div>
+  </div>
+  <div class="menu-content">
+    <div class="menu-title-wrap">
+      <h1 class="menu-title">BLACKWOOD MANOR</h1>
+      <p class="menu-sub">A Ghost Story</p>
+    </div>
+    <div class="menu-buttons">
+      <button class="menu-btn" id="btnNewGame">NEW GAME</button>
+      <button class="menu-btn" id="btnContinue">CONTINUE</button>
+      <button class="menu-btn" id="btnHowTo">HOW TO PLAY</button>
+    </div>
+    <div class="menu-footer">Use headphones for the best experience</div>
+  </div>
+</div>
+
+<!-- HOW TO PLAY -->
+<div id="howToPanel" class="howto-panel hidden">
+  <div class="howto-content">
+    <h2>SURVIVAL GUIDE</h2>
+    <div class="howto-grid">
+      <div class="howto-item"><span class="hk">WASD</span><span>Move</span></div>
+      <div class="howto-item"><span class="hk">MOUSE</span><span>Look (click to lock)</span></div>
+      <div class="howto-item"><span class="hk">SHIFT</span><span>Run (uses stamina)</span></div>
+      <div class="howto-item"><span class="hk">E</span><span>Interact / Pick up</span></div>
+      <div class="howto-item"><span class="hk">F</span><span>Freeze beam on ghost</span></div>
+      <div class="howto-item"><span class="hk">H</span><span>Hide in wardrobe</span></div>
+      <div class="howto-item"><span class="hk">M</span><span>Full manor map</span></div>
+      <div class="howto-item"><span class="hk">ESC</span><span>Pause</span></div>
+    </div>
+    <div class="howto-story">
+      <p>Collect <strong>4 Memory Shards</strong> scattered across the manor.</p>
+      <p>Solve <strong>3 Puzzles</strong> in the Library, Dining Room, and Kitchen.</p>
+      <p>Evade <strong>Cyrus Blackwood</strong>. He listens for running and mistakes.</p>
+      <p>Reach the <strong>Ritual Mirror</strong> in the Attic to escape before dawn.</p>
+    </div>
+    <button class="menu-btn" id="btnCloseHowTo">BACK</button>
+  </div>
+</div>
+
+<!-- GAME CONTAINER -->
+<div id="gameContainer" class="game-container hidden">
+  <canvas id="gameCanvas" width="1024" height="576"></canvas>
+  <div id="clickOverlay" class="click-overlay">
+    <div class="click-msg">CLICK TO ENTER</div>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud" class="hud hidden">
+    <div class="hud-tl">
+      <div class="hud-bar-row"><span class="hud-label">HEALTH</span><div class="bar-track"><div id="healthBar" class="bar-fill bar-health"></div></div></div>
+      <div class="hud-bar-row"><span class="hud-label">FEAR</span><div class="bar-track"><div id="fearBar" class="bar-fill bar-fear"></div></div></div>
+      <div class="hud-bar-row"><span class="hud-label">STAMINA</span><div class="bar-track"><div id="staminaBar" class="bar-fill bar-stamina"></div></div></div>
+      <div class="hud-bar-row"><span class="hud-label">LANTERN</span><div class="bar-track"><div id="lanternBar" class="bar-fill bar-lantern"></div></div></div>
+    </div>
+    <div class="hud-tr">
+      <canvas id="minimapCanvas" width="160" height="160"></canvas>
+      <div class="minimap-label" id="roomLabel">ENTRANCE HALL</div>
+    </div>
+    <div class="hud-bottom">
+      <div class="inventory-bar" id="inventoryBar">
+        <div class="inv-slot" id="slot0"><span class="slot-icon">⬜</span></div>
+        <div class="inv-slot" id="slot1"><span class="slot-icon">⬜</span></div>
+        <div class="inv-slot" id="slot2"><span class="slot-icon">⬜</span></div>
+        <div class="inv-slot" id="slot3"><span class="slot-icon">⬜</span></div>
+        <div class="inv-slot" id="slot4"><span class="slot-icon">⬜</span></div>
+        <div class="inv-slot" id="slot5"><span class="slot-icon">⬜</span></div>
+      </div>
+      <div class="objective-box">
+        <div class="obj-label">OBJECTIVE</div>
+        <div id="objectiveText" class="obj-text">Find the Memory Shards</div>
+        <div class="journal-panel">
+          <div class="journal-row"><span>MEMORIES</span><strong id="memoryCount">0/4</strong></div>
+          <div class="journal-row"><span>PUZZLES</span><strong id="puzzleCount">0/3</strong></div>
+          <div id="journalLast" class="journal-last">No journal entries yet.</div>
+        </div>
+      </div>
+    </div>
+    <div id="interactPrompt" class="interact-prompt hidden">
+      <span class="ik">E</span><span id="interactText">Interact</span>
+    </div>
+    <div id="roomFlash" class="room-flash hidden"></div>
+    <div id="freezeHud" class="freeze-hud hidden">
+      <div class="freeze-label">FOCUSING BEAM</div>
+      <div class="freeze-track"><div id="freezeFill" class="freeze-fill"></div></div>
+    </div>
+  </div>
+
+  <!-- HIDING -->
+  <div id="hidingOverlay" class="hiding-overlay hidden">
+    <div class="closet-left"></div>
+    <div class="closet-slit">
+      <div class="closet-msg">YOU ARE HIDING<br><small>Press H to leave</small></div>
+    </div>
+    <div class="closet-right"></div>
+  </div>
+
+  <!-- DIALOGUE -->
+  <div id="dialogueBox" class="dialogue-box hidden">
+    <div class="dialogue-speaker" id="dialogueSpeaker">MAYA</div>
+    <div class="dialogue-text" id="dialogueText"></div>
+    <div class="dialogue-hint">Press SPACE to continue</div>
+  </div>
+
+  <!-- PUZZLE -->
+  <div id="puzzleOverlay" class="puzzle-overlay hidden">
+    <div class="puzzle-modal" id="puzzleModal"></div>
+  </div>
+
+  <!-- FULL MAP -->
+  <div id="fullMapOverlay" class="fullmap-overlay hidden">
+    <h2 class="fullmap-title">BLACKWOOD MANOR</h2>
+    <canvas id="fullMapCanvas" width="600" height="500"></canvas>
+    <p class="fullmap-hint">Press M to close</p>
+  </div>
+
+  <!-- PAUSE -->
+  <div id="pauseMenu" class="pause-menu hidden">
+    <div class="pause-content">
+      <h2>PAUSED</h2>
+      <button class="menu-btn" id="btnResume">RESUME</button>
+      <button class="menu-btn" id="btnSave">SAVE GAME</button>
+      <button class="menu-btn" id="btnQuit">QUIT TO MENU</button>
+    </div>
+  </div>
+</div>
+
+<!-- END SCREEN -->
+<div id="endScreen" class="end-screen hidden">
+  <div class="end-card">
+    <div id="endIcon" class="end-icon">💀</div>
+    <h1 id="endTitle">YOU DIED</h1>
+    <p id="endMessage" class="end-msg"></p>
+    <button class="menu-btn" id="btnPlayAgain">PLAY AGAIN</button>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
