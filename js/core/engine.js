@@ -9,6 +9,7 @@ import { SpatialAudioSystem } from './spatial-audio.js';
 import { ParticleSystem, FogEffect } from './particles.js';
 import { environmentalEffects } from './environmental-effects.js';
 import { initDirector, updateDirector, nudgeTension } from './director.js';
+import { initCinematics, updateCinematics, playBeat } from './cinematics.js';
 import { updateFeedback, showRoomTitle, pulsePickup, pulseFocus, pulseRitual, addJournalEntry } from './feedback.js';
 import { initInput, Keys, isHide, isPause, isMap } from './input.js';
 import { updatePlayer } from '../entities/player.js';
@@ -32,12 +33,15 @@ let accumulator = 0;
 let lastTime    = 0;
 let rafId       = null;
 let _interactCooldown = 0;
+let _hideCooldown     = 0;
+let _interactKeyHeld  = false;
 let _mapKeyHeld       = false;
 let _pauseKeyHeld     = false;
 let _hideKeyHeld      = false;
 let _ritualTimer      = 0;
 let _ritualActive     = false;
 let _ritualPhase      = 0;
+let _ritualEnding     = false;
 
 // ======================== INIT ========================
 export function initEngine() {
@@ -59,6 +63,7 @@ export function initEngine() {
     
     initInput(canvas);
     initMinimap();
+    initCinematics();
   } catch (error) {
     console.error('Engine init failed:', error);
     // Don't throw - allow story to still play even if engine init fails
@@ -89,6 +94,7 @@ export function startGame(useSave = false) {
 
     // Hiding spots
     State.hidingSpots = getHidingSpots();
+    initCinematics();
 
     // Apply save if requested
     if (useSave) {
@@ -118,6 +124,16 @@ export function startGame(useSave = false) {
 
     State.running = true;
     State.phase   = 'playing';
+    _interactCooldown = 0;
+    _hideCooldown = 0;
+    _interactKeyHeld = false;
+    _mapKeyHeld = false;
+    _pauseKeyHeld = false;
+    _hideKeyHeld = false;
+    _ritualTimer = 0;
+    _ritualActive = false;
+    _ritualPhase = 0;
+    _ritualEnding = false;
     lastTime      = performance.now();
     console.log('✓ Game state set, starting loop');
     
@@ -132,16 +148,9 @@ export function startGame(useSave = false) {
     
     console.log('✓ Audio initialized');
 
-    // Opening dialogue
-    setTimeout(() => {
-      showDialogue([
-      'I wake up on a cold stone floor...',
-      'The Blackwood Manor. I came here investigating disappearances.',
-      'The door is locked. I need to find a way out.',
-      'Those notes I read — four Memory Shards, three puzzles. The mirror in the Attic.',
-      'I must hurry before dawn...',
-    ], 'MAYA');
-  }, 500);
+    if (!useSave) {
+      setTimeout(() => playBeat('opening_wake'), 500);
+    }
 
     if (rafId) cancelAnimationFrame(rafId);
     rafId = requestAnimationFrame(loop);
@@ -163,7 +172,7 @@ function loop(timestamp) {
     const delta = Math.min((timestamp - lastTime) / 1000, MAX_ACCUM);
     lastTime    = timestamp;
 
-    if (State.phase === 'playing') {
+    if (State.phase === 'playing' || State.phase === 'hiding') {
       // Fixed timestep accumulator
       accumulator += delta;
       while (accumulator >= FIXED_DT) {
@@ -190,6 +199,7 @@ function fixedUpdate(dt) {
 
   // Input gating
   _interactCooldown = Math.max(0, _interactCooldown - dt);
+  _hideCooldown = Math.max(0, _hideCooldown - dt);
 
   // Handle map toggle
   const mapDown = isMap();
@@ -211,19 +221,31 @@ function fixedUpdate(dt) {
 
   // Hide mechanic
   const hideDown = isHide();
-  if (hideDown && !_hideKeyHeld) {
+  let hideToggledThisFrame = false;
+  if (hideDown && !_hideKeyHeld && _hideCooldown <= 0) {
     toggleHide();
+    hideToggledThisFrame = true;
+    _hideCooldown = 0.25;
     _hideKeyHeld = true;
   }
   if (!hideDown) _hideKeyHeld = false;
 
   // Interact
-  if (Keys['KeyE'] && _interactCooldown <= 0) {
-    tryInteract();
+  const interactDown = !!Keys['KeyE'];
+  if (interactDown && !_interactKeyHeld && _interactCooldown <= 0 && !hideToggledThisFrame) {
+    if (State.player.isHiding) {
+      exitHiding();
+      _hideCooldown = 0.25;
+    } else {
+      tryInteract();
+    }
     _interactCooldown = 0.5;
+    _interactKeyHeld = true;
   }
+  if (!interactDown) _interactKeyHeld = false;
 
   // Update subsystems
+  updateCinematics(dt);
   updatePlayer(dt);
   updateGhost(dt);
   updateDirector(dt);
@@ -641,17 +663,23 @@ function collectItem(id, item) {
   if (item.type === 'shard') {
     State.shardsCollected++;
     addJournalEntry('memory', memoryLineForShard(id));
-    showDialogue([
-      `Memory Shard collected (${State.shardsCollected}/${State.shardsTotal})`,
-      memoryLineForShard(id),
-    ], 'MAYA');
+    if (!playBeat(`memory_${id}`)) {
+      showDialogue([
+        `Memory Shard collected (${State.shardsCollected}/${State.shardsTotal})`,
+        memoryLineForShard(id),
+      ], 'MAYA');
+    }
     Audio.playPickup();
     if (State.shardsCollected === State.shardsTotal) {
-      setTimeout(() => showDialogue([
-        'All memory shards... I remember now.',
-        'Elara was murdered here. Her spirit is trapped.',
-        'The ritual mirror in the Attic — it is the only way.',
-      ], 'MAYA'), 3000);
+      setTimeout(() => {
+        if (!playBeat('all_memories')) {
+          showDialogue([
+            'All memory shards... I remember now.',
+            'Elara was murdered here. Her spirit is trapped.',
+            'The ritual mirror in the Attic — it is the only way.',
+          ], 'MAYA');
+        }
+      }, 3000);
     }
     return;
   }
@@ -731,6 +759,11 @@ function checkInteractPrompt() {
   const p = State.player;
   const range = TILE * 1.5;
 
+  if (p.isHiding) {
+    hideInteractPrompt();
+    return;
+  }
+
   for (const [id, item] of Object.entries(State.items)) {
     if (item.collected) continue;
     const dx = item.wx - p.x, dy = item.wy - p.y;
@@ -802,10 +835,15 @@ function enterHiding(hs) {
   p.isHiding  = true;
   p.hidingAt  = hs;
   State.phase = 'hiding';
+  hideInteractPrompt();
   document.getElementById('hidingOverlay')?.classList.remove('hidden');
   document.getElementById('hidingOverlay')?.classList.add('active');
   nudgeTension(0.08);
   Audio.playBreath(false);
+  _interactCooldown = Math.max(_interactCooldown, 0.25);
+  _hideCooldown = Math.max(_hideCooldown, 0.25);
+  _interactKeyHeld = !!Keys['KeyE'];
+  playBeat('first_hide');
 }
 
 function exitHiding() {
@@ -815,6 +853,8 @@ function exitHiding() {
   State.phase = 'playing';
   document.getElementById('hidingOverlay')?.classList.add('hidden');
   document.getElementById('hidingOverlay')?.classList.remove('active');
+  _interactCooldown = Math.max(_interactCooldown, 0.25);
+  _hideCooldown = Math.max(_hideCooldown, 0.25);
 }
 
 // ======================== RITUAL ========================
@@ -832,6 +872,7 @@ function tryRitual() {
   _ritualActive = true;
   _ritualTimer  = 0;
   _ritualPhase  = 0;
+  _ritualEnding = false;
 
   // Boost ghost aggression
   State.ghost.state = 'chase';
@@ -840,11 +881,13 @@ function tryRitual() {
 
   Audio.playRitual();
   pulseRitual(1);
-  showDialogue([
-    'The mirror pulses with violet light...',
-    'The ritual has begun. Hold position!',
-    'CYRUS IS COMING — DO NOT LET HIM REACH YOU!',
-  ], 'ELARA');
+  if (!playBeat('ritual_start', { force: true })) {
+    showDialogue([
+      'The mirror pulses with violet light...',
+      'The ritual has begun. Hold position!',
+      'CYRUS IS COMING — DO NOT LET HIM REACH YOU!',
+    ], 'ELARA');
+  }
 }
 
 function updateRitual(dt) {
@@ -854,13 +897,18 @@ function updateRitual(dt) {
   if (_ritualTimer > 20  && _ritualPhase < 2) { _ritualPhase = 2; Audio.playGhostShriek(); pulseRitual(1.2); State.ghost.speed = 5.0; }
   if (_ritualTimer > 28  && _ritualPhase < 3) {
     _ritualPhase = 3;
-    // Dramatic silence
-    showDialogue(['Almost... HOLD ON!'], 'ELARA');
+    // Let the canvas ritual overlay carry the final warning so the ending beat cannot queue behind dialogue.
+    Audio.playRoomStinger('attic');
   }
 
-  if (_ritualTimer >= 30) {
-    // VICTORY!
-    triggerVictory();
+  if (_ritualTimer >= 30 && !_ritualEnding) {
+    _ritualEnding = true;
+    _ritualActive = false;
+    State.ghost.active = false;
+    State.ghost.state = 'stunned';
+    State.fear = 0;
+    playBeat('ending_free', { force: true });
+    setTimeout(() => triggerVictory(), 2400);
   }
 
   // If player dies during ritual, ritual fails
@@ -923,11 +971,13 @@ export function triggerDeath() {
 
 function checkVictoryCondition() {
   if (State.shardsCollected >= State.shardsTotal && State.puzzlesSolved >= 3) {
-    showDialogue([
-      'Everything is ready.',
-      'The ritual mirror waits in the Attic.',
-      'Find it — and end this nightmare.',
-    ], 'ELARA');
+    if (!playBeat('ritual_ready')) {
+      showDialogue([
+        'Everything is ready.',
+        'The ritual mirror waits in the Attic.',
+        'Find it — and end this nightmare.',
+      ], 'ELARA');
+    }
   }
 }
 

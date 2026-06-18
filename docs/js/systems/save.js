@@ -23,6 +23,9 @@ export function saveGame() {
       candles:  State.puzzles.candles.solved,
       combo:    State.puzzles.combo.solved,
     },
+    storyFlags: {
+      seenBeats: [...(State.storyFlags?.seenBeats || [])],
+    },
     items: Object.fromEntries(
       Object.entries(State.items).map(([id, item]) => [id, item.collected])
     ),
@@ -73,6 +76,9 @@ export function applySave(data, allItems) {
   State.puzzles.symbols.solved = !!data.puzzles?.symbols;
   State.puzzles.candles.solved  = !!data.puzzles?.candles;
   State.puzzles.combo.solved    = !!data.puzzles?.combo;
+  State.storyFlags = {
+    seenBeats: Array.isArray(data.storyFlags?.seenBeats) ? [...new Set(data.storyFlags.seenBeats)] : [],
+  };
   if (Array.isArray(data.comboCode) && data.comboCode.length === 3) {
     State.comboCode = data.comboCode.map(Number);
   }

@@ -470,6 +470,52 @@ html, body {
 }
 .closet-msg small { font-size: 0.85rem; color: #444; letter-spacing: 2px; }
 
+/* ===== CINEMATIC BEATS ===== */
+.cinematic-overlay {
+  position: absolute; inset: 0;
+  z-index: 58;
+  pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(255,255,255,0.04), transparent 38%),
+    linear-gradient(90deg, rgba(0,0,0,0.34), transparent 28%, transparent 72%, rgba(0,0,0,0.34));
+  opacity: 1;
+  transition: opacity 0.55s ease;
+}
+.cinematic-overlay.hidden {
+  opacity: 0;
+}
+.cinematic-letterbox {
+  position: absolute; left: 0; right: 0;
+  height: 12%;
+  background: rgba(0,0,0,0.78);
+  box-shadow: 0 0 30px rgba(0,0,0,0.9);
+}
+.cinematic-letterbox.top { top: 0; }
+.cinematic-letterbox.bottom { bottom: 0; }
+.cinematic-card {
+  position: absolute;
+  left: 48px; right: 48px; top: 18%;
+  max-width: 760px;
+  text-shadow: 0 0 18px rgba(0,0,0,0.9);
+}
+.cinematic-title {
+  font-family: var(--font-horror);
+  font-size: clamp(2rem, 6vw, 4.8rem);
+  color: rgba(235,225,205,0.92);
+  letter-spacing: 7px;
+  line-height: 0.95;
+}
+.cinematic-subtitle {
+  margin-top: 12px;
+  font-family: var(--font-ui);
+  font-size: clamp(0.76rem, 1.8vw, 1.02rem);
+  color: rgba(212,162,77,0.88);
+  letter-spacing: 3px;
+  line-height: 1.5;
+  max-width: 620px;
+}
+
 /* ===== DIALOGUE BOX ===== */
 .dialogue-box {
   position: absolute; bottom: 60px; left: 20px; right: 20px;

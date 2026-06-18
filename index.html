@@ -59,7 +59,7 @@
       <div class="howto-item"><span class="hk">SHIFT</span><span>Run (uses stamina)</span></div>
       <div class="howto-item"><span class="hk">E</span><span>Interact / Pick up</span></div>
       <div class="howto-item"><span class="hk">F</span><span>Freeze beam on ghost</span></div>
-      <div class="howto-item"><span class="hk">H</span><span>Hide in wardrobe</span></div>
+      <div class="howto-item"><span class="hk">H</span><span>Hide / leave hiding</span></div>
       <div class="howto-item"><span class="hk">M</span><span>Full manor map</span></div>
       <div class="howto-item"><span class="hk">ESC</span><span>Pause</span></div>
     </div>
@@ -103,7 +103,7 @@
       </div>
       <div class="objective-box">
         <div class="obj-label">OBJECTIVE</div>
-        <div id="objectiveText" class="obj-text">Find the Memory Shards</div>
+        <div id="objectiveText" class="obj-text">Search Blackwood Manor</div>
         <div class="journal-panel">
           <div class="journal-row"><span>MEMORIES</span><strong id="memoryCount">0/4</strong></div>
           <div class="journal-row"><span>PUZZLES</span><strong id="puzzleCount">0/3</strong></div>
@@ -125,9 +125,19 @@
   <div id="hidingOverlay" class="hiding-overlay hidden">
     <div class="closet-left"></div>
     <div class="closet-slit">
-      <div class="closet-msg">YOU ARE HIDING<br><small>Press H to leave</small></div>
+      <div class="closet-msg">YOU ARE HIDING<br><small>Press H or E to leave</small></div>
     </div>
     <div class="closet-right"></div>
+  </div>
+
+  <!-- CINEMATIC BEATS -->
+  <div id="cinematicOverlay" class="cinematic-overlay hidden">
+    <div class="cinematic-letterbox top"></div>
+    <div class="cinematic-card">
+      <div id="cinematicTitle" class="cinematic-title"></div>
+      <div id="cinematicSubtitle" class="cinematic-subtitle"></div>
+    </div>
+    <div class="cinematic-letterbox bottom"></div>
   </div>
 
   <!-- DIALOGUE -->

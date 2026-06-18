@@ -119,6 +119,19 @@ export const State = {
     lastEntry: '',
   },
 
+  storyFlags: {
+    seenBeats: [],
+  },
+
+  cinematic: {
+    active: false,
+    id: null,
+    title: '',
+    subtitle: '',
+    timer: 0,
+    duration: 0,
+  },
+
   settings: {
     reducedMotion: false,
     filmGrain: true,
@@ -201,6 +214,15 @@ export function resetState() {
   });
 
   State.journal = { memories: [], clues: [], lastEntry: '' };
+  State.storyFlags = { seenBeats: [] };
+  Object.assign(State.cinematic, {
+    active: false,
+    id: null,
+    title: '',
+    subtitle: '',
+    timer: 0,
+    duration: 0,
+  });
 
   State.screenShake = 0;
   State.screenFlash = { alpha: 0, r: 0, g: 0, b: 0 };

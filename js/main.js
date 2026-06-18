@@ -20,11 +20,15 @@ function isDebugMode() {
 
 // ======================== STORY INTRO ========================
 const STORY_LINES = [
-  'October 31st.',
-  'A journalist goes missing while investigating the Blackwood estate...',
-  'She was last seen driving toward the manor at dusk.',
-  'The locals say the ghost of Cyrus Blackwood still walks those halls.',
-  'That journalist... was me.',
+  'October 31st. 11:58 PM.',
+  'The last road into Blackwood bends through dead trees and old rain.',
+  'I came chasing a missing-person story the police had already buried.',
+  'At the gate, my recorder caught a child humming beneath the static.',
+  'Then the manor lights opened one by one, like eyes.',
+  'The locals were right about Cyrus Blackwood.',
+  'They were wrong about one thing: the house does not wait for victims.',
+  'It invites witnesses.',
+  'That witness was me.',
   'And I just woke up inside.',
 ];
 

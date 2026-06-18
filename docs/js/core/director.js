@@ -4,6 +4,7 @@ import { State } from './state.js';
 import { Audio } from './audio.js';
 import { ROOM_MOODS } from '../maps/manor.js';
 import { flashScreen, shakeScreen, showRoomTitle } from './feedback.js';
+import { playBeat } from './cinematics.js';
 
 const COOLDOWN_DEFAULTS = {
   whisper: 10,
@@ -79,6 +80,7 @@ export function updateDirector(dt) {
 export function onRoomChanged(roomId) {
   Audio.setRoomMood(roomId);
   showRoomTitle(roomId);
+  playBeat(`room_${roomId}`);
   if (isReady('stinger')) {
     Audio.playRoomStinger(roomId);
     setCooldown('stinger', COOLDOWN_DEFAULTS.stinger + Math.random() * 8);
@@ -102,6 +104,7 @@ function awakenGhost() {
   Audio.playGhostWhisper();
   flashScreen(120, 0, 80, 0.2);
   shakeScreen(3);
+  playBeat('ghost_awakened');
 }
 
 function onGhostStateChanged(from, to) {
@@ -109,6 +112,7 @@ function onGhostStateChanged(from, to) {
     Audio.playGhostShriek();
     flashScreen(170, 0, 0, 0.28);
     shakeScreen(7);
+    playBeat('first_chase');
   } else if (to === 'stunned') {
     flashScreen(0, 210, 255, 0.26);
     shakeScreen(4);

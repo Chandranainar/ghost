@@ -29,13 +29,13 @@ export function updateHUD() {
   const objEl = document.getElementById('objectiveText');
   if (objEl) {
     if (!State.ghost.active) {
-      objEl.textContent = 'Explore the manor...';
+      objEl.textContent = 'Search Blackwood Manor';
     } else if (State.shardsCollected < State.shardsTotal) {
-      objEl.textContent = `Find Memory Shards (${State.shardsCollected}/${State.shardsTotal})`;
+      objEl.textContent = `Recover Memory Shards (${State.shardsCollected}/${State.shardsTotal})`;
     } else if (State.puzzlesSolved < 3) {
-      objEl.textContent = `Solve the puzzles (${State.puzzlesSolved}/3)`;
+      objEl.textContent = `Break the manor's locks (${State.puzzlesSolved}/3)`;
     } else {
-      objEl.textContent = 'Reach the Attic - perform the ritual!';
+      objEl.textContent = 'Reach the Attic Mirror';
     }
   }
 
